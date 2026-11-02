@@ -91,13 +91,13 @@ function vClock(){const c=T.clock;return `<h2>타이머</h2><div class="bigclock
 function vGuide(){const d=REQ[0];return `<h2>교사 시범 (5분)</h2><div class="box"><b>문제 · ${esc(d.who)} · ${esc(d.text)}</b><p class="small" style="margin:4px 0 0">교사 = 풀이팀, 학생 대표 = 해결팀. 저장하지 않는 연습 화면이에요.</p>
   <ol class="small" style="margin:8px 0 0;padding-left:18px;display:grid;gap:4px">
    <li>AI 식: 시범 화면의 문장을 ChatGPT에 넣고 계수를 확인해요 → ${esc(fmtPoly(xco(DATA.demo)))}</li>
-   <li>미분은 미리 써 둔 결과만 30초: f′(x) = −3(x − 8)(x − 16) → 8시는 정의역 밖이라 지움 → 증감표 12시 33명 ↗ 16시 161명 ↘ 18시 105명</li>
+   <li>미분은 미리 써 둔 결과만 30초: f′(x) = −3x² + 48 = −3(x − 4)(x + 4) → x = −4는 정의역 밖이라 지움 → x = 4가 16시 → 증감표 12시 33명 ↗ 16시 161명 ↘ 18시 105명</li>
    <li>단서 고르는 생각을 소리 내어: "이 개형을 정하려면 무엇이 꼭 있어야 할까? 16시까지 늘다가 줄어드니 극대의 위치와 극댓값을 알려 주면 되겠다." → 극댓값 단서 1개</li>
    <li>학생 대표가 단서만 보고 개형을 그리고, 후보를 지우고, 그래프를 고르고, 근거를 써요.</li>
    <li>마지막 질문: "이 단서 한 장이 개형 전체를 정했나요?" → 후보 4개 중에서는 하나만 남았다는 뜻이에요. 그래서 판단 기준은 '후보 중 하나만 남는가'예요.</li></ol>
   <a class="btn navy" href="student.html?demo=1" style="display:inline-flex;margin-top:10px">시범 화면 열기</a></div>
   <h2 style="margin-top:18px">정답과 개형을 정한 단서</h2><div class="tscroll"><table><tr><th>문제</th><th>함수</th><th>f′(x)=0</th><th>정답</th><th>개형을 정한 단서</th></tr>
-  ${REQ.map(r=>`<tr><td style="text-align:left"><b>${esc(r.groups)}</b><br>${esc(r.who)} · ${esc(r.what)}</td><td>${esc(fmtPoly(xco(DATA[r.data])))}<br><span class="small muted">${r.dom[0]}시 ≤ x ≤ ${r.dom[1]}시</span></td><td>${rtList(DATA[r.data]).map(tl).join(', ')}</td><td><b>${keyText(r)}</b></td><td class="small" style="text-align:left">${esc(r.key)}</td></tr>`).join('')}</table></div>
+  ${REQ.map(r=>`<tr><td style="text-align:left"><b>${esc(r.groups)}</b><br>${esc(r.who)} · ${esc(r.what)}</td><td>${esc(fmtPoly(xco(DATA[r.data])))}<br><span class="small muted">0 ≤ x ≤ ${r.dom[1]-r.dom[0]} (${r.dom[0]}시~${r.dom[1]}시)</span></td><td>x = ${rtList(DATA[r.data]).join(', ')}<br><span class="small muted">x = 0이 ${DATA[r.data].cen}시</span></td><td><b>${keyText(r)}</b></td><td class="small" style="text-align:left">${esc(r.key)}</td></tr>`).join('')}</table></div>
   <p class="small muted">단서를 고르는 방법은 하나가 아니에요. 다른 단서 조합으로도 후보가 하나만 남으면 점수를 받아요.</p>
   <h3 style="margin-top:14px">순회 발문</h3><p class="small">풀이: "AI가 준 식에 표의 x를 넣으면 같은 값이 나와요?" · "f′(x)=0의 해 중 정의역 밖은?" · 단서: "이 단서만 받으면 어떤 개형과 헷갈릴까요?" · 결정: "이 조건이면 개형은 어떤 모양일까요?" · "남은 두 그래프는 어디가 달라요?" · "근거에 개형의 모양·시각·값이 들어갔어요?"</p>
   <h3>정리 (개형을 정하는 단서)</h3><div class="box yel">① 증감과 극값으로 개형의 뼈대를 정한다. ② 정의역 밖의 해는 지우고, 끝값까지 비교해야 가장 큰 값·작은 값이 정해진다. ③ 가장 빠르게 늘어나는 때는 f′(x)가 가장 큰 때다. ④ 기준값 이상인 시간은 f(x)=기준값의 해로 정해진다. ⑤ AI는 데이터를 식으로 바꿔 주지만, 식을 검증하고 개형을 정하는 단서을 골라 결정하는 것은 우리의 몫이다.</div>`;}

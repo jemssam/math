@@ -27,7 +27,7 @@ const DEMO=Q.get('demo')==='1';
 let G=+(Q.get('g')||0);try{if(!G)G=JSON.parse(localStorage.getItem('gbd-login')||'{}').group||1;}catch(e){G=G||1;}
 const P=partnerOf(G),N=ROUND;
 const KEY=DEMO?'gbd-st-demo':`gbd-st-${CLASS}-${G}`;
-const fresh=c=>({case:c,stage:'analyze',co:['','','',''],coOk:false,coTry:0,rt:['',''],rtOk:false,rtTry:0,sent:[],reasons:{},recon:{strokes:[],sketched:false,sketchUrl:'',out:[],cand:null,extra:null,openExtra:false,ans:{a:'',b:''},why:''},reconRes:null});
+const fresh=c=>({case:c,stage:'analyze',deg:null,co:['','','','',''],coOk:false,coTry:0,coNote:'',rt:['','',''],rtOk:false,rtTry:0,sent:[],reasons:{},recon:{strokes:[],sketched:false,sketchUrl:'',out:[],cand:null,extra:null,openExtra:false,ans:{a:'',b:''},why:''},reconRes:null});
 let L=null;try{L=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
 if(!L||!L.recon||!('strokes' in L.recon))L=DEMO?fresh('demo'):{stage:'setup',case:null};
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(L));}catch(e){}};
@@ -54,24 +54,28 @@ function vSetup(){const list=REQ.filter(r=>r.id!=='demo');
   ${Object.entries(TYPES).map(([k,t])=>`<h3 style="margin:14px 0 6px">${t}</h3><div class="grid2">${list.filter(r=>r.kind===k).map(r=>`<button class="req" data-case="${r.id}" aria-pressed="${L.case===r.id}"><span class="who">${r.num?'문제 '+r.num:'시범 문제'}</span><b>${esc(DATA[r.data].name)}</b><span>${esc(r.text)}</span></button>`).join('')}</div>`).join('')}
   <div class="box yel sec"><b>순서</b> <span class="small">① 문장을 복사해 ChatGPT로 식 만들기 → 활동지에 미분과 증감표 → ② 단서 1~3개과 이유 보내기 → ③ ${P}모둠이 보낸 단서로 개형을 그리고 결정 → ④ 결과 확인</span></div>
   <button class="btn navy big" id="start" style="margin-top:12px" ${L.case?'':'disabled'}>${L.case?`문제 ${caseById(L.case).num} 풀이 시작`:'문제를 먼저 고르세요'}</button></section>`;}
-function aiPrompt(r){const d=DATA[r.data];return `다음은 ${d.place} 데이터야. (가상 데이터)\n${r.xs.map((x,i)=>`${x}시 ${r.ys[i]}${d.unit}`).join(', ')}\n시각 x에 대한 삼차함수 f(x) = ax³ + bx² + cx + d 로 근사해 줘. 계수 a, b, c, d를 알려 줘.`;}
-function vAnalyze(){const r=myCase(),d=DATA[r.data];
+const LET=['a','b','c','d','e'];
+function aiPrompt(r,deg){const d=DATA[r.data],n=deg+1;const form=deg===3?'f(x) = ax³ + bx² + cx + d':'f(x) = ax⁴ + bx³ + cx² + dx + e';
+  return `다음은 ${d.place} 데이터야. (가상 데이터)\nx는 ${d.cen}시부터 지난 시간이야. (x = 0이 ${d.cen}시)\n${r.xs.map((h,i)=>`x = ${h-d.cen}일 때 ${r.ys[i]}${d.unit}`).join(', ')}\nx에 대한 ${deg===3?'삼차함수':'사차함수'} ${form} 로 근사해 줘. 계수 ${LET.slice(0,n).join(', ')}를 알려 줘.`;}
+function vAnalyze(){const r=myCase(),d=DATA[r.data],deg=L.deg,n=deg?deg+1:0,rts=rtList(d),Lx=r.dom[1]-r.dom[0];
   return `<section class="panel"><div class="kicker"><span>① ${ME} 풀이팀</span><b class="small muted">이 데이터는 ${YOU}에게 보이지 않아요</b></div>
   <div class="grid2"><div class="box"><span class="small" style="color:var(--an);font-weight:700">${r.num?'문제 '+r.num:'시범 문제'}</span><br><b>${esc(d.name)}</b><p class="small" style="margin:4px 0 0">${esc(r.text)}</p></div>
-   <div class="box"><span class="small muted">${esc(d.name)} (실제 경향을 바탕으로 만든 가상 데이터)</span><div class="tscroll" style="margin-top:6px"><table><tr>${r.xs.map(x=>`<th>${x}시</th>`).join('')}</tr><tr>${r.ys.map(y=>`<td>${y}</td>`).join('')}</tr></table></div></div></div>
-  <div class="sec"><div class="box"><h3>AI 활용 · 데이터를 함수식으로 바꾸기</h3>
-    <p class="small muted" style="margin:0 0 6px">먼저 활동지에 개형을 예상해요: 표만 보고 언제 늘고 언제 줄까요? 그다음 아래 문장을 복사해서 <b>ChatGPT 앱</b>에 붙여 넣고, 받은 계수를 들고 이 화면으로 돌아와요.</p>
-    <div class="prompt" id="pr">${esc(aiPrompt(r))}</div>
+   <div class="box"><span class="small muted">${esc(d.name)} (실제 경향을 바탕으로 만든 가상 데이터) · x는 ${d.cen}시부터 지난 시간</span><div class="tscroll" style="margin-top:6px"><table><tr><th>시각</th>${r.xs.map(h=>`<th>${h}시</th>`).join('')}</tr><tr><th>x</th>${r.xs.map(h=>`<td>${h-d.cen}</td>`).join('')}</tr><tr><th>${esc(d.unit)}</th>${r.ys.map(y=>`<td>${y}</td>`).join('')}</tr></table></div></div></div>
+  <div class="sec"><div class="box"><h3>AI 활용 · 데이터를 식으로 바꾸기</h3>
+    <p class="small" style="margin:0 0 6px"><b>1. 표를 보고 차수 정하기</b> · 먼저 활동지에 개형을 예상해요. 늘다가 줄거나 줄다가 느는 방향이 몇 번 바뀌나요? 1~2번 바뀌면 삼차함수, 3번 바뀌면 사차함수로 해 보세요.</p>
+    <div class="row"><button class="btn sm" data-deg="3" aria-pressed="${deg===3}" style="${deg===3?'background:var(--navy);color:var(--navy-ink)':''}">삼차함수</button><button class="btn sm" data-deg="4" aria-pressed="${deg===4}" style="${deg===4?'background:var(--navy);color:var(--navy-ink)':''}">사차함수</button></div>
+    ${deg?`<p class="small" style="margin:12px 0 6px"><b>2. 아래 문장을 복사해 ChatGPT 앱에 붙여 넣기</b> · 받은 계수를 들고 이 화면으로 돌아와요.</p>
+    <div class="prompt" id="pr">${esc(aiPrompt(r,deg))}</div>
     <div class="row" style="margin-top:8px"><button class="btn sm" id="cp">문장 복사</button><span class="small muted" id="cpm"></span></div>
-    <p class="small muted" style="margin:10px 0 6px">ChatGPT가 알려 준 계수를 넣으세요.</p>
-    <div class="row">${['a','b','c','d'].map((k,i)=>`<label class="small">${k} = <input class="co" type="text" inputmode="decimal" id="co${i}" value="${esc(L.co[i])}" aria-label="계수 ${k}"></label>`).join('')}<button class="btn sm navy" id="coChk">AI 식 확인</button></div>
-    ${L.coTry&&!L.coOk?'<p class="warn" style="margin:10px 0 0">데이터와 맞지 않아요. 계수를 그대로 옮겼는지 확인하고, 소수로 나오면 가장 가까운 정수로 넣어 보세요.</p>':''}
-    ${L.coOk?`<p class="ok" style="margin:10px 0 0">데이터와 맞아요. 활동지에 식을 쓰고, x에 ${r.xs[1]}을 넣어 표의 값(${r.ys[1]})과 같은지 직접 확인해 보세요.</p>`:''}</div>
-  ${L.coOk?`<div class="box"><h3>활동지에 직접 미분하기</h3><div class="eq">${esc(fmtPoly(xco(d)))}</div>
-    <p class="small muted" style="margin:8px 0">정의역 ${r.dom[0]}시 ≤ x ≤ ${r.dom[1]}시 · 활동지에 ① f′(x) → ② 인수분해 → ③ f′(x)=0인 x → ④ 정의역 밖의 해 지우기 → ⑤ 증감표 → ⑥ 개형</p>
-    <div class="row"><label class="small">x = <input class="co" type="text" inputmode="numeric" id="r0" value="${esc(L.rt[0])}" aria-label="첫째 해"></label><label class="small">x = <input class="co" type="text" inputmode="numeric" id="r1" value="${esc(L.rt[1])}" aria-label="둘째 해"></label><button class="btn sm navy" id="rtChk">해 확인</button></div>
-    ${L.rtTry&&!L.rtOk?'<p class="warn" style="margin:10px 0 0">다시 확인해 보세요. 각 항에 차수를 곱하고 차수를 하나 내렸나요?</p>':''}
-    ${L.rtOk?`<p class="ok" style="margin:10px 0 0">맞아요! f′(x)=0인 x = ${rtList(d).join(', ')}. 정의역 밖의 해를 지우고 증감표와 개형을 완성하세요.</p>`:''}</div>
+    <p class="small" style="margin:12px 0 6px"><b>3. ChatGPT가 알려 준 계수 넣기</b></p>
+    <div class="row">${LET.slice(0,n).map((k,i)=>`<label class="small">${k} = <input class="co" type="text" inputmode="decimal" id="co${i}" value="${esc(L.co[i]||'')}" aria-label="계수 ${k}"></label>`).join('')}<button class="btn sm navy" id="coChk">AI 식 확인</button></div>
+    ${L.coTry&&!L.coOk?'<p class="warn" style="margin:10px 0 0">데이터와 맞지 않아요. 계수를 그대로 옮겼는지 확인하세요. 계속 맞지 않으면 표를 다시 보고 차수를 다시 생각해 보세요.</p>':''}
+    ${L.coOk?`<p class="ok" style="margin:10px 0 0">데이터와 맞아요.${L.coNote?' '+L.coNote:''} 활동지에 식을 쓰고, x에 1을 넣어 표의 값(${r.ys[1]})과 같은지 직접 확인해 보세요.</p>`:''}`:''}</div>
+  ${L.coOk?`<div class="box"><h3>활동지에 직접 미분하기</h3><div class="eq">${esc(fmtPoly(d.co))}</div>
+    <p class="small muted" style="margin:8px 0">정의역 0 ≤ x ≤ ${Lx} (${r.dom[0]}시 ~ ${r.dom[1]}시) · 활동지에 ① f′(x) → ② 인수분해 → ③ f′(x)=0인 x → ④ 정의역 밖의 해 지우기 → ⑤ 증감표 → ⑥ 개형</p>
+    <div class="row">${rts.map((_,i)=>`<label class="small">x = <input class="co" type="text" inputmode="numeric" id="r${i}" value="${esc(L.rt[i]||'')}" aria-label="${i+1}번째 해"></label>`).join('')}<button class="btn sm navy" id="rtChk">해 확인</button></div>
+    ${L.rtTry&&!L.rtOk?'<p class="warn" style="margin:10px 0 0">다시 확인해 보세요. 각 항에 차수를 곱하고 차수를 하나 내렸나요? 정의역 밖의 해도 모두 넣어요.</p>':''}
+    ${L.rtOk?`<p class="ok" style="margin:10px 0 0">맞아요! f′(x)=0인 x = ${rts.join(', ')}. 시각으로 바꾸면 ${rts.map(t=>tl(t+d.cen)).join(', ')}이에요. 정의역 밖의 해를 지우고 증감표와 개형을 완성하세요.</p>`:''}</div>
   <button class="btn navy big" id="toPick" ${L.rtOk?'':'disabled'}>보낼 단서 고르기</button>`:''}</div></section>`;}
 function vPick(){const r=myCase(),cat=catalogue(r),ready=L.sent.length&&L.sent.every(id=>(L.reasons[id]||'').trim());
   return `<section class="panel"><div class="kicker"><span>② ${ME} 단서 보내기</span></div>
@@ -154,10 +158,14 @@ function bind(){const on=(id,ev,fn)=>{const e=$(id);if(e)e.addEventListener(ev,f
   document.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>keepY(()=>{L.case=b.dataset.case;}));
   on('start','click',()=>{const c=L.case;L=fresh(c);mine({stage:'analyzing',sent_cards:[],card_reasons:{},recon_stage:null,graph_ok:null});go('analyze');});
   on('cp','click',()=>copyText($('pr').textContent,$('cpm')));
-  [0,1,2,3].forEach(i=>on('co'+i,'input',e=>{L.co[i]=e.target.value;save();}));
-  on('coChk','click',()=>keepY(()=>{L.coTry++;const co=L.co.map(v=>parseFloat(String(v).replace(/−/g,'-').replace(/\s/g,''))),X=xco(DATA[myCase().data]);L.coOk=co.every((v,i)=>isFinite(v)&&Math.abs(v-X[i])<=Math.max(0.05,Math.abs(X[i])*0.002));if(L.coOk)mine({stage:'coef_ok',coef_ok:true});}));
-  [0,1].forEach(i=>on('r'+i,'input',e=>{L.rt[i]=e.target.value;save();}));
-  on('rtChk','click',()=>keepY(()=>{L.rtTry++;const want=rtList(DATA[myCase().data]),got=L.rt.map(v=>parseFloat(String(v).replace(/−/g,'-'))).filter(isFinite).sort((p,q)=>p-q);L.rtOk=got.length===2&&got.every((v,i)=>Math.abs(v-want[i])<0.01);if(L.rtOk)mine({stage:'roots_ok',roots_ok:true});}));
+  document.querySelectorAll('[data-deg]').forEach(b=>b.onclick=()=>keepY(()=>{L.deg=+b.dataset.deg;L.coTry=0;L.coOk=false;L.coNote='';}));
+  [0,1,2,3,4].forEach(i=>on('co'+i,'input',e=>{L.co[i]=e.target.value;save();}));
+  on('coChk','click',()=>keepY(()=>{L.coTry++;const r=myCase(),d=DATA[r.data],n=L.deg+1,co=L.co.slice(0,n).map(v=>parseFloat(String(v).replace(/−/g,'-').replace(/\s/g,'')));
+    L.coOk=co.every(isFinite)&&r.xs.every((h,i)=>{const p=poly(co,h-d.cen),y=r.ys[i];return Math.abs(p-y)<=Math.max(1,Math.abs(y)*0.01);});
+    L.coNote=(L.coOk&&L.deg===4&&degOf(d)===3)?'그런데 x⁴의 계수가 0이니 실제로는 삼차함수예요.':'';
+    if(L.coOk)mine({stage:'coef_ok',coef_ok:true});}));
+  [0,1,2].forEach(i=>on('r'+i,'input',e=>{L.rt[i]=e.target.value;save();}));
+  on('rtChk','click',()=>keepY(()=>{L.rtTry++;const want=rtList(DATA[myCase().data]),got=L.rt.slice(0,want.length).map(v=>parseFloat(String(v).replace(/−/g,'-'))).filter(isFinite).sort((p,q)=>p-q);L.rtOk=got.length===want.length&&got.every((v,i)=>Math.abs(v-want[i])<0.01);if(L.rtOk)mine({stage:'roots_ok',roots_ok:true});}));
   on('toPick','click',()=>go('pick'));
   document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>keepY(()=>{const id=+b.dataset.s;if(L.sent.includes(id))L.sent=L.sent.filter(v=>v!==id);else if(L.sent.length<3)L.sent.push(id);else toast('단서는 3개까지 보낼 수 있어요.');}));
   document.querySelectorAll('[data-rs]').forEach(el=>el.addEventListener('input',e=>{L.reasons[e.target.dataset.rs]=e.target.value;save();const s=$('send');if(s)s.disabled=!(L.sent.length&&L.sent.every(id=>(L.reasons[id]||'').trim()));}));
