@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>그래프 블라인드 결정</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <section class="panel hero">
+    <div>
+      <p class="eyebrow">미적분Ⅰ · 도함수의 활용 · 2학년 3반</p>
+      <h1>그래프를 보지 않고 결정할 수 있을까?</h1>
+      <p>AI와 미분을 활용해 실생활 데이터의 그래프 개형을 해석하고, 근거 있는 결정을 내려요.</p>
+    </div>
+    <div id="mode"></div>
+  </section>
+  <section class="panel login">
+    <h2 style="margin:0">입장하기</h2>
+    <div class="roles">
+      <button class="role" data-role="student" aria-pressed="true"><b>학생</b><span class="small muted">모둠 번호를 골라요</span></button>
+      <button class="role" data-role="teacher" aria-pressed="false"><b>교사</b><span class="small muted">비밀번호를 넣으면 수합 화면이 열려요</span></button>
+    </div>
+    <div id="form"></div>
+    <p class="warn" id="err" hidden></p>
+  </section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="core.js"></script>
+<script src="api.js"></script>
+<script>
+let role='student',g=1,dev='ipad1';
+try{const o=JSON.parse(localStorage.getItem('gbd-login')||'{}');if(o.group)g=o.group;if(o.device==='ipad1'||o.device==='ipad2')dev=o.device;}catch(e){}
+$('mode').innerHTML=modeBadge();
+function form(){
+  document.querySelectorAll('[data-role]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.role===role));
+  $('err').hidden=true;
+  if(role==='student'){
+    $('form').innerHTML=`<div class="row"><label class="small muted">우리 모둠 <select id="g">${[1,2,3,4,5,6,7,8].map(i=>`<option value="${i}" ${i===g?'selected':''}>${i}모둠</option>`).join('')}</select></label></div>
+
+    <button class="btn navy big" id="go" style="margin-top:12px">입장</button>`;
+    $('g').onchange=e=>{g=+e.target.value;};
+    $('go').onclick=()=>{try{localStorage.setItem('gbd-login',JSON.stringify({role:'student',group:g,device:dev}));}catch(e){}location.href='student.html?g='+g;};
+  }else{
+    $('form').innerHTML=`<label class="small muted">교사 비밀번호 <input type="password" id="pin" inputmode="numeric" autocomplete="off" style="width:200px"></label>
+    <button class="btn navy big" id="go" style="margin-top:12px">교사 화면 열기</button>`;
+    const enter=()=>{if(String($('pin').value)===String(CFG.TEACHER_PIN||'6886')){try{sessionStorage.setItem('gbd-teacher','1');}catch(e){}location.href='teacher.html';}else{$('err').textContent='비밀번호가 맞지 않아요.';$('err').hidden=false;}};
+    $('go').onclick=enter;$('pin').onkeydown=e=>{if(e.key==='Enter')enter();};
+  }
+}
+document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{role=b.dataset.role;form();});
+form();
+</script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>그래프 블라인드 결정 · 교사</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><div class="logo">f′</div><div><b>그래프를 보지 않고 결정할 수 있을까?</b><span>교사 화면 · 학생 활동 수합</span></div></div>
+    <div class="row"><span id="mode"></span><span class="small muted" id="upd"></span><a class="btn sm" href="index.html">나가기</a></div>
+  </div>
+  <section class="panel"><div class="tabs" id="tabs" role="tablist"></div></section>
+  <section class="panel" id="app"></section>
+</div>
+<div class="modal" id="modal" hidden><div class="inner" id="mI"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="core.js"></script>
+<script src="api.js"></script>
+<script>
+let ok=false;try{ok=sessionStorage.getItem('gbd-teacher')==='1';}catch(e){}
+if(!ok)location.replace('index.html');
+$('mode').innerHTML=modeBadge();
+const N=ROUND;
+const T={tab:'progress',rows:[],ups:[],showKey:false,armed:false,pres:1,reveal:false,clock:{total:720,left:720,run:false,end:0}};
+const TABS=[['progress','진행 현황'],['score','점수판'],['compare','유형별 비교'],['present','발표 모드'],['gallery','사진'],['clock','타이머'],['guide','시범·정답'],['admin','관리']];
+const row=g=>T.rows.find(r=>r.round_no===N&&r.analyst_group===g);
+const upsOf=(g,k)=>T.ups.filter(u=>u.round_no===N&&u.group_no===g&&(!k||u.kind===k));
+const lastUp=(g,k)=>{const u=upsOf(g,k);return u[u.length-1]||null;};
+const anLabel=r=>!r?['시작 전','']:r.stage==='sent'?[`단서 ${(r.sent_cards||[]).length}개 보냄`,'an']:r.stage==='roots_ok'?['미분 완료 · 단서 고르는 중','go']:r.stage==='coef_ok'?['AI 식 확인 · 미분 중','go']:['풀이 중','go'];
+const rcLabel=r=>!r||r.stage!=='sent'?['단서 기다림','']:r.recon_stage==='done'?[r.graph_ok?'해결 성공':'해결 실패',r.graph_ok?'ok':'no']:r.recon_stage==='sketched'?['개형 완료 · 후보 고르는 중','go']:r.recon_stage==='recon'?['개형 그리는 중','go']:['단서 도착','go'];
+function totals(){const t=Array(9).fill(0).map(()=>({an:0,gr:0}));
+  T.rows.forEach(r=>{if(r.round_no===N&&r.stage==='sent'&&r.recon_stage==='done'){t[r.analyst_group].an+=r.an_score||0;t[r.recon_group].gr+=r.gr_score||0;}});
+  return [1,2,3,4,5,6,7,8].map(g=>({g,an:t[g].an,gr:t[g].gr,sum:t[g].an+t[g].gr}));}
+const thumb=(u,cap)=>u?`<img src="${esc(u.url)}" alt="${esc(cap)}" data-img="${esc(u.url)}" data-cap="${esc(cap)}">`:'';
+
+/* ---------- 화면 ---------- */
+function vProgress(){
+  return `<h2>진행 현황</h2><div class="grid8">${[1,2,3,4,5,6,7,8].map(g=>{const p=partnerOf(g),me=row(g),a=anLabel(me),b=rcLabel(row(p)),c=me&&caseById(me.case_id);
+    return `<div class="gcard"><h3>${g}모둠 <span class="small muted">↔ ${p}모둠</span></h3><div class="small">${c?`<b>문제 ${c.num}</b> ${esc(c.what)}`:'<span class="muted">문제 고르는 중</span>'}</div><div class="small"><b>풀이</b> <span class="chip ${a[1]}">${a[0]}</span></div><div class="small"><b>해결</b> <span class="chip ${b[1]}">${b[0]}</span></div><div class="small muted">활동지 사진 ${upsOf(g,'worksheet').length?'올림':'아직'} · 개형 ${upsOf(g,'sketch').length?'올림':'아직'}</div></div>`;}).join('')}</div>
+  <p class="small muted" style="margin:10px 0 0">풀이: 풀이 중 → AI 식 확인 → 미분 완료 → 단서 보냄 · 해결: 단서 기다림 → 개형 그리는 중 → 개형 완료 → 성공/실패. 4초마다 자동으로 새로 고쳐져요.</p>`;}
+function vScore(){const t=totals().sort((a,b)=>b.sum-a.sum||a.g-b.g),mx=t[0].sum;
+  return `<h2>점수판</h2><div class="rank">${t.map((x,i)=>`<div class="rrow ${mx>0&&x.sum===mx?'top':''}"><span class="n">${i+1}</span><div><b>${x.g}모둠</b><span class="small muted"> · 풀이 ${x.an}점 · 해결 ${x.gr}점</span></div><span class="sc">${x.sum}</span></div>`).join('')}</div>
+  <p class="small muted" style="margin:10px 0 0">점수는 짝 모둠의 해결이 끝나면 자동으로 더해져요. 풀이: 보낸 단서만으로 하나만 남으면 1개 20 · 2개 15 · 3개 10 / 해결: 그래프 10 · 문제 답 10 · 추가 단서 −5</p>`;}
+function miniCands(r,ids){const C=candidates(r),rem=remaining(r,ids).map(c=>c.id),yb=bounds(r,C.map(c=>c.fn));
+  return `<div class="cands" style="grid-template-columns:repeat(2,minmax(0,1fr))">${C.map(c=>`<div class="cand ${rem.includes(c.id)?'':'out'}" aria-checked="${T.showKey&&c.ans}"><b>${c.label}</b>${svgGraph(r,{curves:[{fn:c.fn,col:T.showKey&&c.ans?'var(--good)':'var(--an)'}],yb,yl:true,tp:40,w:380,h:210,aria:c.label+'번 그래프',cline:r.c!=null})}</div>`).join('')}</div>`;}
+function vCompare(){const sent=T.rows.filter(x=>x.round_no===N&&x.stage==='sent'&&caseById(x.case_id));
+  return `<div class="row" style="justify-content:space-between"><h2 style="margin:0">유형별 비교</h2><button class="btn sm" id="key">${T.showKey?'정답 숨기기':'정답과 개형을 정한 단서 보기'}</button></div>
+  <p class="small muted">같은 유형의 문제라도 개형이 다르면 필요한 단서가 달라요. 오른쪽 그래프는 보낸 단서만으로 남는 후보예요 (흐린 것은 지워진 후보).</p>
+  ${Object.entries(TYPES).map(([k,t])=>{const rs=sent.filter(x=>caseById(x.case_id).kind===k).sort((a,b)=>caseById(a.case_id).num-caseById(b.case_id).num||a.analyst_group-b.analyst_group);
+   return `<div class="sec"><h3 style="margin:0 0 6px">${t} <span class="small muted">· ${REQ.filter(r=>r.kind===k&&r.id!=='demo').map(r=>'문제 '+r.num).join(', ')}</span></h3>
+   ${rs.length?rs.map(x=>{const r=caseById(x.case_id),left=remaining(r,x.sent_cards||[]).length,done=x.recon_stage==='done';
+     return `<div class="cmprow" style="margin-bottom:10px"><div><h3>문제 ${r.num} ${esc(r.what)} · ${x.analyst_group}모둠 → ${x.recon_group}모둠 <span class="chip ${left===1?'ok':'no'}">남은 후보 ${left}개</span> ${done?`<span class="chip ${x.graph_ok?'ok':'no'}">${x.graph_ok?'해결 성공':'해결 실패'}</span>`:'<span class="chip go">해결 중</span>'}</h3>
+       ${T.showKey?`<p class="small" style="margin:0 0 6px"><b>정답 ${keyText(r)}</b> · ${esc(r.key)}</p>`:''}
+       <div class="sent">${(x.sent_cards||[]).map(c=>`<div class="sitem"><span>${esc(cardName(r,c))}</span><strong class="small">${esc((x.card_reasons||{})[c]||'')}</strong></div>`).join('')}${x.extra_card?`<div class="sitem extra"><span>추가 단서 (해결팀)</span><strong class="small">${esc(cardName(r,x.extra_card))}</strong></div>`:''}</div>
+       ${done?`<div class="box" style="margin-top:8px"><b>답 ${esc(x.answer||'')}</b> <span class="chip ${x.ans_ok?'ok':'no'}">${x.ans_ok?'맞음':'다시 생각'}</span><p class="small" style="margin:4px 0 0">${esc(x.why||'')}</p></div>`:''}
+       <div class="thumbs" style="margin-top:8px">${thumb(lastUp(x.analyst_group,'worksheet'),x.analyst_group+'모둠 활동지')}${thumb(lastUp(x.recon_group,'sketch'),x.recon_group+'모둠이 그린 개형')}</div></div>
+      <div>${miniCands(r,x.sent_cards||[])}</div></div>`;}).join(''):'<p class="small muted">아직 이 유형의 단서를 보낸 모둠이 없어요.</p>'}</div>`;}).join('')}`;}
+function vPresent(){const g=T.pres,p=partnerOf(g),mine=row(g),dec=row(p);
+  const sel=`<div class="pairsel">${[1,2,3,4,5,6,7,8].map(k=>{const a=row(k),b=row(partnerOf(k)),done=b&&b.recon_stage==='done'&&a&&a.stage==='sent';return `<button class="tab" data-pres="${k}" aria-selected="${g===k}">${k}모둠${done?' ✓':''}</button>`;}).join('')}</div>`;
+  const cardList=(r,x)=>(x.sent_cards||[]).map(c=>`<div class="sitem"><span>${esc(cardName(r,c))}</span><strong>${esc((catalogue(r).find(h=>h.id===c)||{}).answer||'')}</strong><span>이유: ${esc((x.card_reasons||{})[c]||'')}</span></div>`).join('');
+  let left='<p class="small muted">아직 단서를 보내지 않았어요.</p>',right='<p class="small muted">짝 모둠의 단서를 아직 받지 않았어요.</p>',reveal='';
+  const ra=mine&&caseById(mine.case_id);
+  if(ra&&mine.stage==='sent'){const n=remaining(ra,mine.sent_cards||[]).length;
+    left=`<div class="box yel"><span class="small" style="font-weight:700">문제 ${ra.num} · ${esc(ra.who)} · ${TYPES[ra.kind]}</span><div class="big">${esc(ra.text)}</div></div><div class="sent">${cardList(ra,mine)}</div><div><span class="chip ${n===1?'ok':'no'}">이 단서만으로 남는 후보 ${n}개</span> <span class="chip">풀이 +${mine.an_score||0}점</span></div>${thumb(lastUp(g,'worksheet'),g+'모둠 활동지')}`;}
+  const rb=dec&&caseById(dec.case_id);
+  if(rb&&dec.stage==='sent'){const done=dec.recon_stage==='done';
+    right=`<div class="box yel"><span class="small" style="font-weight:700">문제 ${rb.num} · ${esc(rb.who)} · ${TYPES[rb.kind]}</span><div class="big">${esc(rb.text)}</div></div>
+     <p class="small" style="margin:0"><b>받은 단서</b> ${(dec.sent_cards||[]).map(c=>esc(cardName(rb,c))).join(', ')}${dec.extra_card?` · 추가 단서 ${esc(cardName(rb,dec.extra_card))}`:''}</p>
+     ${thumb(lastUp(g,'sketch'),g+'모둠이 단서로 그린 개형')||'<p class="small muted">개형을 아직 올리지 않았어요.</p>'}
+     ${done?`<div class="big">결정: ${esc(dec.answer||'')}</div><p style="margin:0">근거: ${esc(dec.why||'')}</p><div><span class="chip ${dec.graph_ok?'ok':'no'}">그래프 ${dec.graph_ok?'맞음':'다름'}</span> <span class="chip ${dec.ans_ok?'ok':'no'}">답 ${dec.ans_ok?'맞음':'다시 생각'}</span> <span class="chip">해결 +${dec.gr_score||0}점</span></div>`:'<p class="small muted">아직 해결 중이에요.</p>'}`;
+    if(T.reveal){const C=candidates(rb),ans=C.find(c=>c.ans),ch=C.find(c=>c.id===dec.chosen),k=keyAns(rb),yb=bounds(rb,C.map(c=>c.fn));
+      const vl=rb.kind==='iv'?[{x:k.iv[0],col:'var(--good)',t:tl(k.iv[0])},{x:k.iv[1],col:'var(--good)',t:tl(k.iv[1])}]:[{x:k.pt,col:'var(--good)',t:'정답 '+tl(k.pt)}];
+      reveal=`<div class="grid2 sec"><div><h3>${g}모둠이 결정한 문제의 진짜 그래프</h3><div class="gbox">${svgGraph(rb,{curves:[...(ch&&!ch.ans?[{fn:ch.fn,col:'var(--bad)',w:2.5}]:[]),{fn:ans.fn,col:'var(--good)'}],yb,yl:true,points:true,vlines:vl,cline:rb.c!=null,w:640,h:330,aria:'진짜 그래프'})}</div><p class="small muted" style="margin:6px 0 0">초록 곡선이 진짜 그래프, 회색 점이 데이터예요.${ch&&!ch.ans?' 빨간 곡선은 고른 그래프예요.':''}</p></div>
+       <div><h3>개형을 정한 단서</h3><div class="box yel"><b>정답 ${keyText(rb)}</b><p style="margin:6px 0 0">${esc(rb.key)}</p></div></div></div>`;}}
+  return `<div class="row" style="justify-content:space-between"><h2 style="margin:0">발표 모드 · ${g}모둠</h2><button class="btn ${T.reveal?'':'navy'}" id="reveal">${T.reveal?'진짜 그래프 숨기기':'진짜 그래프 보기'}</button></div>
+  ${sel}
+  <div class="grid2 sec"><div class="col box" style="display:grid;gap:8px;align-content:start"><h3 style="margin:0">① 풀이 · ${g}모둠이 ${p}모둠에게 보낸 단서</h3>${left}</div>
+   <div class="col box" style="display:grid;gap:8px;align-content:start"><h3 style="margin:0">② 해결 · ${g}모둠이 ${p}모둠의 단서로 한 결정</h3>${right}</div></div>
+  ${reveal}`;}
+function vGallery(){
+  return `<h2>사진</h2>${[1,2,3,4,5,6,7,8].map(g=>{const w=lastUp(g,'worksheet'),s=lastUp(g,'sketch');return w||s?`<h3 style="margin:14px 0 6px">${g}모둠</h3><div class="gal">${[[w,'모둠 대표 활동지'],[s,`${partnerOf(g)}모둠 단서로 그린 개형`]].filter(v=>v[0]).map(([u,t])=>`<figure data-img="${esc(u.url)}" data-cap="${g}모둠 · ${t}"><img src="${esc(u.url)}" alt="${g}모둠 ${t}"><figcaption>${t} · ${new Date(u.created_at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</figcaption></figure>`).join('')}</div>`:'';}).join('')||'<p class="small muted">아직 올라온 사진이 없어요.</p>'}`;}
+function vClock(){const c=T.clock;return `<h2>타이머</h2><div class="bigclock ${c.left<=60&&c.run?'urgent':''}" id="bc">${mmss(c.left)}</div>
+  <div class="row" style="justify-content:center">${[[720,'풀이 12분'],[480,'해결 8분'],[180,'발표 3분'],[60,'1분']].map(([v,l])=>`<button class="btn" data-ck="${v}">${l}</button>`).join('')}</div>
+  <div class="row" style="justify-content:center;margin-top:10px"><button class="btn navy" id="ckGo">${c.run?'일시정지':'시작'}</button><button class="btn" id="ckReset">다시</button></div>
+  <p class="small muted" style="text-align:center">시간이 끝나면 알림음이 울려요.</p>`;}
+function vGuide(){const d=REQ[0];return `<h2>교사 시범 (5분)</h2><div class="box"><b>문제 · ${esc(d.who)} · ${esc(d.text)}</b><p class="small" style="margin:4px 0 0">교사 = 풀이팀, 학생 대표 = 해결팀. 저장하지 않는 연습 화면이에요.</p>
+  <ol class="small" style="margin:8px 0 0;padding-left:18px;display:grid;gap:4px">
+   <li>AI 식: 시범 화면의 문장을 ChatGPT에 넣고 계수를 확인해요 → ${esc(fmtPoly(xco(DATA.demo)))}</li>
+   <li>미분은 미리 써 둔 결과만 30초: f′(x) = −3(x − 8)(x − 16) → 8시는 정의역 밖이라 지움 → 증감표 12시 33명 ↗ 16시 161명 ↘ 18시 105명</li>
+   <li>단서 고르는 생각을 소리 내어: "이 개형을 정하려면 무엇이 꼭 있어야 할까? 16시까지 늘다가 줄어드니 극대의 위치와 극댓값을 알려 주면 되겠다." → 극댓값 단서 1개</li>
+   <li>학생 대표가 단서만 보고 개형을 그리고, 후보를 지우고, 그래프를 고르고, 근거를 써요.</li>
+   <li>마지막 질문: "이 단서 한 장이 개형 전체를 정했나요?" → 후보 4개 중에서는 하나만 남았다는 뜻이에요. 그래서 판단 기준은 '후보 중 하나만 남는가'예요.</li></ol>
+  <a class="btn navy" href="student.html?demo=1" style="display:inline-flex;margin-top:10px">시범 화면 열기</a></div>
+  <h2 style="margin-top:18px">정답과 개형을 정한 단서</h2><div class="tscroll"><table><tr><th>문제</th><th>함수</th><th>f′(x)=0</th><th>정답</th><th>개형을 정한 단서</th></tr>
+  ${REQ.map(r=>`<tr><td style="text-align:left"><b>${esc(r.groups)}</b><br>${esc(r.who)} · ${esc(r.what)}</td><td>${esc(fmtPoly(xco(DATA[r.data])))}<br><span class="small muted">${r.dom[0]}시 ≤ x ≤ ${r.dom[1]}시</span></td><td>${rtList(DATA[r.data]).map(tl).join(', ')}</td><td><b>${keyText(r)}</b></td><td class="small" style="text-align:left">${esc(r.key)}</td></tr>`).join('')}</table></div>
+  <p class="small muted">단서를 고르는 방법은 하나가 아니에요. 다른 단서 조합으로도 후보가 하나만 남으면 점수를 받아요.</p>
+  <h3 style="margin-top:14px">순회 발문</h3><p class="small">풀이: "AI가 준 식에 표의 x를 넣으면 같은 값이 나와요?" · "f′(x)=0의 해 중 정의역 밖은?" · 단서: "이 단서만 받으면 어떤 개형과 헷갈릴까요?" · 결정: "이 조건이면 개형은 어떤 모양일까요?" · "남은 두 그래프는 어디가 달라요?" · "근거에 개형의 모양·시각·값이 들어갔어요?"</p>
+  <h3>정리 (개형을 정하는 단서)</h3><div class="box yel">① 증감과 극값으로 개형의 뼈대를 정한다. ② 정의역 밖의 해는 지우고, 끝값까지 비교해야 가장 큰 값·작은 값이 정해진다. ③ 가장 빠르게 늘어나는 때는 f′(x)가 가장 큰 때다. ④ 기준값 이상인 시간은 f(x)=기준값의 해로 정해진다. ⑤ AI는 데이터를 식으로 바꿔 주지만, 식을 검증하고 개형을 정하는 단서을 골라 결정하는 것은 우리의 몫이다.</div>`;}
+function vAdmin(){return `<h2>관리</h2><div class="box"><b>현재 연결</b><p class="small" style="margin:4px 0 0">${LIVE?`Supabase 실시간 연결 · 반 코드 <b>${esc(CLASS)}</b>`:'체험 모드 · 기록이 이 브라우저 안에만 있어요. config.js에 Supabase 주소와 키를 넣으면 실시간 연결돼요.'}</p></div>
+  <div class="box sec"><b>학생 입장 주소</b><p class="small" style="margin:4px 0 0">${esc(location.href.replace(/teacher\.html.*$/,'index.html'))}</p></div>
+  <div class="box sec"><b>반 코드 ${esc(CLASS)}의 기록 모두 지우기</b><p class="small" style="margin:4px 0 8px">연습 기록을 지울 때 써요. 지운 기록은 되돌릴 수 없어요. 학생 아이패드에 남은 진행 상태는 각 아이패드에서 나가기 후 다시 들어가면 처음부터 시작돼요.</p>
+   ${T.armed?`<div class="row"><button class="btn" id="rsNo">취소</button><button class="btn" id="rsYes" style="background:var(--bad);color:#fff;border-color:var(--bad)">정말 지우기</button></div>`:`<button class="btn" id="rsArm">기록 지우기</button>`}</div>`;}
+
+/* ---------- 렌더·데이터 ---------- */
+let ck=null;
+function render(){$('tabs').innerHTML=TABS.map(([k,l])=>`<button class="tab" role="tab" data-t="${k}" aria-selected="${T.tab===k}">${l}</button>`).join('');
+  $('app').innerHTML=({progress:vProgress,score:vScore,compare:vCompare,present:vPresent,gallery:vGallery,clock:vClock,guide:vGuide,admin:vAdmin})[T.tab]();bind();}
+function bind(){document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{T.tab=b.dataset.t;T.armed=false;render();});
+  const on=(id,fn)=>{const e=$(id);if(e)e.onclick=fn;};
+  on('key',()=>{T.showKey=!T.showKey;render();});
+  on('reveal',()=>{T.reveal=!T.reveal;render();});
+  document.querySelectorAll('[data-pres]').forEach(b=>b.onclick=()=>{T.pres=+b.dataset.pres;T.reveal=false;render();});
+  document.querySelectorAll('[data-img]').forEach(el=>el.onclick=()=>{$('mI').innerHTML=`<div class="mhead"><b>${esc(el.dataset.cap)}</b><button class="btn" id="mClose">닫기</button></div><img src="${esc(el.dataset.img)}" alt="${esc(el.dataset.cap)}" style="width:100%;max-height:75vh;object-fit:contain;background:#fff;border-radius:10px">`;$('modal').hidden=false;$('mClose').onclick=()=>{$('modal').hidden=true;};});
+  document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>{stopCk();T.clock={total:+b.dataset.ck,left:+b.dataset.ck,run:false};render();});
+  on('ckGo',()=>{const c=T.clock;if(c.run){c.run=false;stopCk();}else{if(c.left<=0)c.left=c.total;c.run=true;c.end=Date.now()+c.left*1000;ck=setInterval(()=>{c.left=Math.max(0,Math.round((c.end-Date.now())/1000));const el=$('bc');if(el){el.textContent=mmss(c.left);el.classList.toggle('urgent',c.left<=60);}if(c.left<=0){c.run=false;stopCk();beep(3);if(T.tab==='clock')render();}},250);}render();});
+  on('ckReset',()=>{stopCk();T.clock={total:T.clock.total,left:T.clock.total,run:false};render();});
+  on('rsArm',()=>{T.armed=true;render();});on('rsNo',()=>{T.armed=false;render();});
+  on('rsYes',async()=>{try{await api.reset();T.armed=false;await refresh();render();}catch(e){alertBox('지우지 못했어요: '+(e.message||e));}});}
+function alertBox(t){$('mI').innerHTML=`<div class="mhead"><b>${esc(t)}</b><button class="btn" id="mClose">닫기</button></div>`;$('modal').hidden=false;$('mClose').onclick=()=>{$('modal').hidden=true;};}
+function stopCk(){if(ck)clearInterval(ck);ck=null;}
+$('modal').addEventListener('click',e=>{if(e.target.id==='modal')$('modal').hidden=true;});
+async function refresh(){try{const [rows,ups]=await Promise.all([api.listRounds(),api.listUploads()]);const changed=JSON.stringify(rows)!==JSON.stringify(T.rows)||ups.length!==T.ups.length;T.rows=rows;T.ups=ups;
+    $('upd').textContent='갱신 '+new Date().toLocaleTimeString('ko-KR');if(changed&&['progress','score','compare','present','gallery'].includes(T.tab)&&$('modal').hidden){const y=window.scrollY;render();window.scrollTo(0,y);}}
+  catch(e){$('upd').textContent='연결 오류 · 다시 시도 중';}}
+render();refresh();setInterval(refresh,4000);
+</script>
+</body>
+</html>
