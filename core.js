@@ -77,7 +77,6 @@ function catalogue(r){const d=DATA[r.data],A=analysis(r),u=d.unit,mx=A.ext.filte
    H(8,'dif','가장 빠른 감소','가장 빠르게 줄어드는 시각은?',A.df(A.rmin)<0?`${tl(A.rmin)}에 가장 빠르게 줄어요 (시간당 ${Math.round(-A.df(A.rmin))}${u}).`:'정의역 안에서 줄어드는 때가 없어요.'),
    H(9,'all','처음 값',`${tl(r.dom[0])}의 값은?`,`${tl(r.dom[0])}에 ${Math.round(A.fa)}${u}${jo(u)}.`),
    H(10,'all','마지막 값',`${tl(r.dom[1])}의 값은?`,`${tl(r.dom[1])}에 ${Math.round(A.fb)}${u}${jo(u)}.`),
-   H(11,'all','최고차항 부호','최고차항 계수의 부호는?',d.co[0]>0?'양수예요. 시간이 갈수록 결국 위로 올라가요.':'음수예요. 시간이 갈수록 결국 아래로 내려가요.')
    ];
   if(r.c!=null){const ro=roots(x=>A.f(x)-r.c,r.dom[0],r.dom[1]);list.push(H(13,'alg',`${r.c}${u}${jo(u)==='이에요'?'과':'와'} 만나는 시각`,`f(x)=${r.c}의 해는?`,`${ro.map(tl).join(', ')}에 ${r.c}${u}${jo(u)==='이에요'?'이':'가'} 돼요.`));}
   return list;}
