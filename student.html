@@ -220,7 +220,8 @@ function bind(){const on=(id,ev,fn)=>{const e=$(id);if(e)e.addEventListener(ev,f
     try{const blob=await shrinkImage(photo,1400);await api.upload(blob,{round_no:N,group_no:G,kind:'worksheet'});photo=null;await loadPhoto();toast('선생님 화면에 올렸어요');}
     catch(err){toast('올리지 못했어요: '+(err.message||err));}photoBusy=false;keepY(()=>{});});}
 /* 새로고침해도 결정 화면에 받은 단서가 다시 보이도록 */
-(async()=>{if(!DEMO&&(L.stage==='recon'||L.stage==='result')){try{partnerRow=await api.getRound(N,P);}catch(e){}if(!partnerRow||!caseById(partnerRow.case_id))L.stage='wait';}if(!DEMO&&L.stage!=='setup'&&!caseById(L.case))L={stage:'setup',case:null};await loadPhoto();render();})();
+(async()=>{if(!DEMO&&L.stage!=='setup'){try{const me=await api.getRound(N,G);if(me===null){L={stage:'setup',case:null};save();}}catch(e){}}
+  if(!DEMO&&(L.stage==='recon'||L.stage==='result')){try{partnerRow=await api.getRound(N,P);}catch(e){}if(!partnerRow||!caseById(partnerRow.case_id))L.stage='wait';}if(!DEMO&&L.stage!=='setup'&&!caseById(L.case))L={stage:'setup',case:null};await loadPhoto();render();})();
 </script>
 </body>
 </html>

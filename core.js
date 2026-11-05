@@ -40,7 +40,7 @@ REQ.forEach(r=>{const d=DATA[r.data];r.xs=[];r.ys=[];for(let x=r.dom[0];x<=r.dom
 const rtList=d=>{const r=roots(t=>dpoly(d.co,t),-60,60);return r.map(v=>Math.round(v*1000)/1000);};
 const xco=d=>d.co;
 const tl=x=>{let H=Math.floor(x+1e-9),M=Math.round((x-H)*60);if(M===60){H++;M=0;}return M?`${H}시 ${M}분`:`${H}시`;};
-const jo=w=>{const c=String(w).trim().slice(-1).charCodeAt(0);return (c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28)?'이에요':'예요';};
+const jo=w=>{if(/ppm$/.test(String(w).trim()))return '이에요';const c=String(w).trim().slice(-1).charCodeAt(0);return (c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28)?'이에요':'예요';};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const SUP=['','','²','³','⁴'];
 const fmtPoly=co=>{const n=co.length-1;let s='';co.forEach((c,i)=>{if(!c)return;const p=n-i,v=p===0?'':p===1?'x':'x'+SUP[p];const a=Math.abs(c),sign=c<0?'−':'+';const body=(a===1&&v?'':a)+v;s+=s?` ${sign} ${body}`:(c<0?'−':'')+body;});return 'f(x) = '+s;};
