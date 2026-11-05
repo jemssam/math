@@ -57,12 +57,12 @@ function vSetup(){const list=REQ.filter(r=>r.id!=='demo');
   <button class="btn navy big" id="start" style="margin-top:12px" ${L.case?'':'disabled'}>${L.case?`문제 ${caseById(L.case).num} 풀이 시작`:'문제를 먼저 고르세요'}</button></section>`;}
 const LET=['a','b','c','d','e'];
 function aiPrompt(r,deg){const d=DATA[r.data],n=deg+1;const form=deg===3?'f(x) = ax³ + bx² + cx + d':'f(x) = ax⁴ + bx³ + cx² + dx + e';
-  return `다음은 ${d.place} 데이터야. (가상 데이터)\nx는 ${d.cen}시부터 지난 시간이야. (x = 0이 ${d.cen}시)\n${r.xs.map((h,i)=>`x = ${h-d.cen}일 때 ${r.ys[i]}${d.unit}`).join(', ')}\nx에 대한 ${deg===3?'삼차함수':'사차함수'} ${form} 로 근사해 줘. 계수 ${LET.slice(0,n).join(', ')}를 알려 줘.`;}
+  return `다음은 ${d.place} 데이터야. (가상 데이터)\nx는 ${d.cen}시를 0으로 놓은 시간이야. (x = 0이 ${d.cen}시, x = 1이 ${d.cen+1}시)\n${r.xs.map((h,i)=>`x = ${h-d.cen}일 때 ${r.ys[i]}${d.unit}`).join(', ')}\nx에 대한 ${deg===3?'삼차함수':'사차함수'} ${form} 로 근사해 줘. 계수 ${LET.slice(0,n).join(', ')}를 알려 줘.`;}
 function vAnalyze(){const r=myCase(),d=DATA[r.data],deg=L.deg,n=deg?deg+1:0,rts=rtList(d),Lx=r.dom[1]-r.dom[0];
   return `<section class="panel"><div class="kicker" style="justify-content:space-between"><span>① ${ME} 풀이팀</span><b class="small muted">이 데이터는 ${YOU}에게 보이지 않아요</b>${DEMO?'':'<button class="btn sm" id="backSetup">← 문제 다시 고르기</button>'}</div>
   <div class="grid2"><div class="box"><span class="small" style="color:var(--an);font-weight:700">${r.num?'문제 '+r.num:'시범 문제'}</span><br><b>${esc(d.name)}</b><p class="small" style="margin:4px 0 0">${esc(r.text)}</p></div>
-   <div class="box"><span class="small muted">${esc(d.name)} (실제 경향을 바탕으로 만든 가상 데이터) · x는 ${d.cen}시부터 지난 시간</span><div class="tscroll" style="margin-top:6px"><table><tr><th>시각</th>${r.xs.map(h=>`<th>${h}시</th>`).join('')}</tr><tr><th>x</th>${r.xs.map(h=>`<td>${h-d.cen}</td>`).join('')}</tr><tr><th>${esc(d.unit)}</th>${r.ys.map(y=>`<td>${y}</td>`).join('')}</tr></table></div></div></div>
-  ${ws('m','문제를 수학의 말로','가장 많은 때 → 닫힌구간 [12, 18]에서 f(x)가 최댓값을 갖는 x<br>x는 12시부터 지난 시간이라 0 ≤ x ≤ 6')}
+   <div class="box"><span class="small muted">${esc(d.name)} (실제 경향을 바탕으로 만든 가상 데이터) · x는 ${d.cen}시를 0으로 놓은 시간 (x = 0이 ${d.cen}시, x = 1이 ${d.cen+1}시)</span><div class="tscroll" style="margin-top:6px"><table><tr><th>시각</th>${r.xs.map(h=>`<th>${h}시</th>`).join('')}</tr><tr><th>x</th>${r.xs.map(h=>`<td>${h-d.cen}</td>`).join('')}</tr><tr><th>${esc(d.unit)}</th>${r.ys.map(y=>`<td>${y}</td>`).join('')}</tr></table></div></div></div>
+  ${ws('m','문제를 수학의 말로','x는 12시를 0으로 놓은 시간이에요. (x = 0이 12시, x = 4가 16시, x = 6이 18시)<br>그래서 정의역은 0 ≤ x ≤ 6<br>가장 많은 때 → 닫힌구간 [0, 6]에서 f(x)가 최댓값을 갖는 x')}
   <div class="sec"><div class="box"><h3>AI 활용 · 데이터를 식으로 바꾸기</h3>
     <p class="small" style="margin:0 0 6px"><b>1. 표를 보고 차수 정하기</b> · 먼저 활동지에 개형을 예상해요. 늘다가 줄거나 줄다가 느는 방향이 몇 번 바뀌나요? 1~2번 바뀌면 삼차함수, 3번 바뀌면 사차함수로 해 보세요.</p>
     <div class="row"><button class="btn sm" data-deg="3" aria-pressed="${deg===3}" style="${deg===3?'background:var(--navy);color:var(--navy-ink)':''}">삼차함수</button><button class="btn sm" data-deg="4" aria-pressed="${deg===4}" style="${deg===4?'background:var(--navy);color:var(--navy-ink)':''}">사차함수</button></div>
@@ -89,7 +89,7 @@ const DEMOTBL=`<table><tr><th>x</th><td>0</td><td>…</td><td>4</td><td>…</td>
 const DEMO_WHY='최댓값을 정하려면 극댓값과 양 끝값을 비교해야 해요. 이 단서로 극댓값이 16시 161명이고, 양 끝값 33명, 105명보다 크다는 것을 알 수 있어요.';
 const DEMO_GROUND='16시까지 늘다가 줄어들고, 16시의 극댓값 161명이 양 끝값 12시 33명, 18시 105명보다 크므로 16시에 가장 많아요.';
 function demoDel(r){const C=candidates(r),fx={alt0:'극대가 14시라서 "16시에 극댓값" 단서와 달라요.',alt1:'18시까지 계속 늘어나서 극대가 없어요.',alt2:'16시 값이 110명이라서 "극댓값 161명" 단서와 달라요.'};
-  return C.map(c=>c.ans?`<b>${c.label} ○</b> 16시에 꼭대기 161명 → 단서와 맞아요. 남겨요.`:`<b>${c.label} ✕</b> ${fx[c.id]}`).join('<br>');}
+  return C.map(c=>c.ans?`<b>${c.label} ○</b> 16시에 극댓값 161명 → 단서와 맞아요. 남겨요.`:`<b>${c.label} ✕</b> ${fx[c.id]}`).join('<br>');}
 function myShape(r){const d=DATA[r.data],fn=x=>poly(d.co,x-d.cen),F=feat(r,fn),u=d.unit,v=y=>Math.round(y);
   const yb=bounds(r,[fn]),vl=F.ext.map(e=>({x:e.x,col:e.type==='max'?'var(--bad)':'var(--an)',dash:true,t:`${tl(e.x)} ${e.type==='max'?'극대':'극소'} ${v(e.v)}${u}`}));
   const flow=[];F.ivs.forEach((iv,i)=>{flow.push(`${tl(iv.l)}~${tl(iv.r)} ${iv.up?'증가':'감소'}`);const e=F.ext[i];if(e)flow.push(`<b>${tl(e.x)} ${e.type==='max'?'극대':'극소'} ${v(e.v)}${u}</b>`);});
@@ -101,7 +101,7 @@ function vPick(){const r=myCase(),cat=catalogue(r),ready=L.sent.length&&L.sent.e
   <h2>어떤 단서가 있어야 이 개형이 정해질까요? (단서 1~3개)</h2>
   <div class="box yel" style="margin-bottom:12px"><span class="small">${EUN(YOU)} 이 단서만 보고 개형을 그린 뒤, 그래프 4개 중 진짜를 골라 문제에 답해요. <b>보낸 단서만으로 진짜 그래프 하나만 남으면</b> 1개 +20 · 2개 +15 · 3개 +10, 후보가 2개 이상 남으면 0점이에요. 단서의 이유는 짝 모둠에게는 보이지 않고, 발표 때 선생님 화면에 나와요.</span></div>
   <div class="box" style="margin-bottom:12px"><span class="small" style="color:var(--an);font-weight:700">${r.num?'문제 '+r.num:'시범 문제'}</span> · <span class="small">${esc(r.text)}</span></div>
-  ${DEMO?myShape(r)+ws('why','단서 고르기와 이유',`<b>생각 순서</b> ① 수학의 말 : [12, 18]에서 f(x)가 최댓값을 갖는 x ② 최댓값을 정하려면? → 극댓값과 양 끝값을 비교해야 해요 ③ 극댓값 161명이 양 끝값 33명, 105명보다 크니까, 극댓값 단서를 보내요.<br><b>이유</b> ${DEMO_WHY}<br><button class="btn sm navy" id="fillWhy" style="margin-top:6px">고른 단서에 이 이유 넣기</button>`):''}
+  ${DEMO?myShape(r)+ws('why','단서 고르기와 이유',`<b>생각 순서</b> ① 수학의 말 : [0, 6]에서 f(x)가 최댓값을 갖는 x ② 최댓값을 정하려면? → 극댓값과 양 끝값을 비교해야 해요 ③ 극댓값 161명이 양 끝값 33명, 105명보다 크니까, 극댓값 단서를 보내요.<br><b>이유</b> ${DEMO_WHY}<br><button class="btn sm navy" id="fillWhy" style="margin-top:6px">고른 단서에 이 이유 넣기</button>`):''}
   <div class="box yel" style="margin-bottom:6px"><b class="small">① 단서 고르기 → ② 활동지에 단서 내용을 먼저 직접 계산해 쓰기 → ③ 카드를 눌러 나온 "보낼 내용"과 같은지 확인 (다르면 활동지 고치기) → ④ 이유 쓰기</b></div>
   ${CGROUP.map(([g,t])=>{const cs=cat.filter(h=>h.g===g);return cs.length?`<h3 style="margin:12px 0 6px">${t}</h3><div class="hints">${cs.map(h=>`<button class="pickc" data-s="${h.id}" aria-pressed="${L.sent.includes(h.id)}"><b>${String(h.id).padStart(2,'0')}</b><span><strong>${esc(cardName(r,h.id))}</strong><small>${L.sent.includes(h.id)?'보낼 내용 : '+esc(h.answer):esc(h.prompt)}</small></span></button>`).join('')}</div>`:'';}).join('')}
   ${L.sent.length?`<div class="sec"><h3>고른 이유</h3>${L.sent.map(id=>`<label class="small" style="display:grid;gap:4px"><b>${esc(cardName(r,id))}</b><input type="text" data-rs="${id}" value="${esc(L.reasons[id]||'')}" placeholder="답을 정하려면 (   )이/가 필요해요. 이 단서로 (   )을/를 알 수 있어요." style="width:100%"></label>`).join('')}</div>`:''}
@@ -128,7 +128,7 @@ function vRecon(){const r=theirCase(),cat=catalogue(r),C=candidates(r),yb=bounds
   <div class="box sec"><h3>1단계 · 단서로 개형 그리기 <span class="small muted">(꼭 먼저 해요)</span></h3>
    ${R.sketched?`<p class="ok" style="margin:0 0 8px">개형을 올렸어요. 이제 후보 그래프와 비교해요.</p>${R.sketchUrl?`<img src="${esc(R.sketchUrl)}" alt="우리가 그린 개형" style="max-height:220px;border:1px solid var(--line);border-radius:10px;background:#fff">`:''}`:`
    <p class="small muted" style="margin:0 0 6px">이 단서로 그리면 개형은 어떤 모양일까요? 받은 단서의 시각과 값을 표시하고 늘고 줄어드는 모양을 손가락이나 펜으로 그려요. 가로축은 ${r.dom[0]}시부터 ${r.dom[1]}시, 위로 갈수록 값이 커요.</p>
-   ${ws('rs','단서로 개형 그리기','받은 단서 : 16시에 극댓값 161명<br>→ 16시까지 올라가다가 16시에 꼭대기(161명), 그 뒤로 내려가는 모양으로 그려요.')}
+   ${ws('rs','단서로 개형 그리기','받은 단서 : 16시에 극댓값 161명<br>→ 16시까지 증가하다가 16시에 극대(극댓값 161명), 그 뒤로 감소하는 모양으로 그려요.')}
    <canvas class="pad" id="pad" width="1000" height="560" aria-label="개형 그리기"></canvas>
    <div class="row" style="margin-top:8px"><button class="btn sm" id="undo">되돌리기</button><button class="btn sm" id="clr">모두 지우기</button><button class="btn navy" id="sk">개형 올리고 후보 보기</button></div>`}</div>
   ${R.sketched?`<div class="box yel" style="margin:14px 0 8px"><b>2단계 · 후보 지우기</b> · <span class="small">우리가 그린 개형, 받은 단서와 맞지 않는 그래프를 ✕로 지우세요. 세로축 값도 확인해요. 남은 후보 <b>${left}개</b></span></div>
