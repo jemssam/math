@@ -138,3 +138,10 @@ function fits(id,T,C){const near=(p,q,t)=>Math.abs(p-q)<=t,rel=(p,q)=>Math.abs(p
   return true;}
 function remaining(r,ids){const C=candidates(r),T=feat(r,C.find(c=>c.ans).fn);return C.filter(c=>c.ans||ids.every(id=>fits(id,T,feat(r,c.fn))));}
 
+
+/* 문제마다 그래프가 하나로 정해지는 최소 단서 수 */
+const _MN={};
+function minNeed(r){if(_MN[r.id])return _MN[r.id];const ids=catalogue(r).map(h=>h.id);let k=3;
+  outer:for(let n=1;n<=3;n++){const rec=(st,cur)=>{if(cur.length===n)return remaining(r,cur).length===1;for(let i=st;i<ids.length;i++)if(rec(i+1,cur.concat(ids[i])))return true;return false;};if(rec(0,[])){k=n;break outer;}}
+  return _MN[r.id]=k;}
+const sentPts=(r,cnt)=>cnt<=2?20:10;
