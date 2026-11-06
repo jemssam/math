@@ -71,12 +71,12 @@ function vAnalyze(){const r=myCase(),d=DATA[r.data],deg=L.deg,n=deg?deg+1:0,rts=
     <div class="prompt" id="pr">${esc(aiPrompt(r,deg))}</div>
     <div class="row" style="margin-top:8px"><button class="btn sm" id="cp">문장 복사</button><span class="small muted" id="cpm"></span></div>
     <p class="small" style="margin:12px 0 6px"><b>3. ChatGPT가 알려 준 계수 넣기</b></p>
-    <div class="row">${LET.slice(0,n).map((k,i)=>`<label class="small">${k} = <input class="co" type="text" inputmode="decimal" id="co${i}" value="${esc(L.co[i]||'')}" aria-label="계수 ${k}"></label>`).join('')}<button class="btn sm navy" id="coChk">AI 식 확인</button></div>
+    <div class="row">${LET.slice(0,n).map((k,i)=>`<label class="small">${k} = <button class="btn sm" type="button" data-neg="co${i}" aria-label="부호 바꾸기">±</button><input class="co" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="co${i}" value="${esc(L.co[i]||'')}" aria-label="계수 ${k}"></label>`).join('')}<button class="btn sm navy" id="coChk">AI 식 확인</button></div>
     ${L.coTry&&!L.coOk?'<p class="warn" style="margin:10px 0 0">데이터와 맞지 않아요. 계수를 그대로 옮겼는지 확인하세요. 계속 맞지 않으면 표를 다시 보고 차수를 다시 생각해 보세요.</p>':''}
     ${L.coOk?`<p class="ok" style="margin:10px 0 0">데이터와 맞아요.${L.coNote?' '+L.coNote:''} 활동지에 식을 쓰고, x에 1을 넣어 표의 값(${r.ys[1]})과 같은지 직접 확인해 보세요.</p>${ws('chk','AI 식 직접 확인','f(x) = −x³ + 48x + 33<br>f(1) = −1 + 48 + 33 = 80 → 표의 값 80과 같아요.')}`:''}`:''}</div>
   ${L.coOk?`<div class="box"><h3>활동지에 직접 미분하기</h3><div class="eq">${esc(fmtPoly(d.co))}</div>
     <p class="small muted" style="margin:8px 0">정의역 0 ≤ x ≤ ${Lx} (${r.dom[0]}시 ~ ${r.dom[1]}시) · 활동지에 ① f′(x) → ② 인수분해 → ③ f′(x)=0인 x → ④ 정의역 밖의 해 지우기 → ⑤ 증감표 → ⑥ 개형</p>
-    <div class="row">${rts.map((_,i)=>`<label class="small">x = <input class="co" type="text" inputmode="numeric" id="r${i}" value="${esc(L.rt[i]||'')}" aria-label="${i+1}번째 해"></label>`).join('')}<button class="btn sm navy" id="rtChk">해 확인</button></div>
+    <div class="row">${rts.map((_,i)=>`<label class="small">x = <button class="btn sm" type="button" data-neg="r${i}" aria-label="부호 바꾸기">±</button><input class="co" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="r${i}" value="${esc(L.rt[i]||'')}" aria-label="${i+1}번째 해"></label>`).join('')}<button class="btn sm navy" id="rtChk">해 확인</button></div>
     ${L.rtTry&&!L.rtOk?'<p class="warn" style="margin:10px 0 0">다시 확인해 보세요. 각 항에 차수를 곱하고 차수를 하나 내렸나요? 정의역 밖의 해도 모두 넣어요.</p>':''}
     ${L.rtOk?`<p class="ok" style="margin:10px 0 0">맞아요! f′(x)=0인 x = ${rts.join(', ')}. ${rts.filter(t=>t<0||t>Lx).length?`정의역 밖의 해 x = ${rts.filter(t=>t<0||t>Lx).join(', ')}는 지워요. `:''}${rts.filter(t=>t>=0&&t<=Lx).map(t=>`x = ${t} → ${tl(t+d.cen)}`).join(', ')}. 증감표와 개형을 완성하세요.</p>`:''}
     ${ws('d','직접 미분과 인수분해','f′(x) = −3x² + 48 = −3(x² − 16) = −3(x − 4)(x + 4)<br>f′(x) = 0 → x = −4, 4<br>x = −4는 정의역 0 ≤ x ≤ 6 밖이라 지워요. · x = 4 → 12시 + 4시간 = <b>16시</b>')}
@@ -181,6 +181,7 @@ function bindPad(){const c=$('pad');if(!c)return;const R=L.recon,pt=e=>{const b=
     catch(e){b.disabled=false;b.textContent='개형 올리고 후보 보기';toast('올리지 못했어요: '+(e.message||e));}};
   drawPad();}
 function bind(){const on=(id,ev,fn)=>{const e=$(id);if(e)e.addEventListener(ev,fn);},go=st=>{L.stage=st;render();window.scrollTo(0,0);};
+  document.querySelectorAll('[data-neg]').forEach(b=>b.onclick=()=>{const e=$(b.dataset.neg);if(!e)return;let v=e.value.trim().replace(/[−–—ㅡ]/g,'-');v=v.startsWith('-')?v.slice(1):'-'+v;e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));});
   document.querySelectorAll('[data-ws]').forEach(b=>b.onclick=()=>keepY(()=>{L.ws=L.ws||{};L.ws[b.dataset.ws]=!L.ws[b.dataset.ws];}));
   on('fillWhy','click',()=>keepY(()=>{L.sent.forEach(id=>{L.reasons[id]=DEMO_WHY;});}));
   on('fillAns','click',()=>keepY(()=>{L.recon.ans.a='16시';L.recon.why=DEMO_GROUND;}));
@@ -190,12 +191,12 @@ function bind(){const on=(id,ev,fn)=>{const e=$(id);if(e)e.addEventListener(ev,f
   on('cp','click',()=>copyText($('pr').textContent,$('cpm')));
   document.querySelectorAll('[data-deg]').forEach(b=>b.onclick=()=>keepY(()=>{L.deg=+b.dataset.deg;L.coTry=0;L.coOk=false;L.coNote='';}));
   [0,1,2,3,4].forEach(i=>on('co'+i,'input',e=>{L.co[i]=e.target.value;save();}));
-  on('coChk','click',()=>keepY(()=>{L.coTry++;const r=myCase(),d=DATA[r.data],n=L.deg+1,co=L.co.slice(0,n).map(v=>parseFloat(String(v).replace(/−/g,'-').replace(/\s/g,'')));
+  on('coChk','click',()=>keepY(()=>{L.coTry++;const r=myCase(),d=DATA[r.data],n=L.deg+1,co=L.co.slice(0,n).map(v=>parseFloat(String(v).replace(/[−–—ㅡ]/g,'-').replace(/\s/g,'')));
     L.coOk=co.every(isFinite)&&r.xs.every((h,i)=>{const p=poly(co,h-d.cen),y=r.ys[i];return Math.abs(p-y)<=Math.max(1,Math.abs(y)*0.01);});
     L.coNote=(L.coOk&&L.deg===4&&degOf(d)===3)?'그런데 x⁴의 계수가 0이니 실제로는 삼차함수예요.':'';
     if(L.coOk)mine({stage:'coef_ok',coef_ok:true});}));
   [0,1,2].forEach(i=>on('r'+i,'input',e=>{L.rt[i]=e.target.value;save();}));
-  on('rtChk','click',()=>keepY(()=>{L.rtTry++;const want=rtList(DATA[myCase().data]),got=L.rt.slice(0,want.length).map(v=>parseFloat(String(v).replace(/−/g,'-'))).filter(isFinite).sort((p,q)=>p-q);L.rtOk=got.length===want.length&&got.every((v,i)=>Math.abs(v-want[i])<0.01);if(L.rtOk)mine({stage:'roots_ok',roots_ok:true});}));
+  on('rtChk','click',()=>keepY(()=>{L.rtTry++;const want=rtList(DATA[myCase().data]),got=L.rt.slice(0,want.length).map(v=>parseFloat(String(v).replace(/[−–—ㅡ]/g,'-').replace(/\s/g,''))).filter(isFinite).sort((p,q)=>p-q);L.rtOk=got.length===want.length&&got.every((v,i)=>Math.abs(v-want[i])<0.01);if(L.rtOk)mine({stage:'roots_ok',roots_ok:true});}));
   on('toPick','click',()=>go('pick'));
   on('backSetup','click',()=>{mine({stage:'choosing',case_id:''});L={stage:'setup',case:null};render();window.scrollTo(0,0);});
   on('backAnalyze','click',()=>go('analyze'));
