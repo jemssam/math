@@ -58,7 +58,7 @@ function vCompare(){const sent=T.rows.filter(x=>x.round_no===N&&x.stage==='sent'
        ${T.showKey?`<p class="small" style="margin:0 0 6px"><b>정답 ${keyText(r)}</b> · ${esc(r.key)}</p>`:''}
        <div class="sent">${(x.sent_cards||[]).map(c=>`<div class="sitem"><span>${esc(cardName(r,c))}</span><strong class="small">${esc((x.card_reasons||{})[c]||'')}</strong></div>`).join('')}${x.extra_card?`<div class="sitem extra"><span>추가 단서 (해결팀)</span><strong class="small">${esc(cardName(r,x.extra_card))}</strong></div>`:''}</div>
        ${done?`<div class="box" style="margin-top:8px"><b>답 ${esc(x.answer||'')}</b> <span class="chip ${x.ans_ok?'ok':'no'}">${x.ans_ok?'맞음':'다시 생각'}</span><p class="small" style="margin:4px 0 0">${esc(x.why||'')}</p></div>`:''}
-       <div class="thumbs" style="margin-top:8px">${thumb(lastUp(x.analyst_group,'worksheet'),x.analyst_group+'모둠 활동지')}${thumb(lastUp(x.recon_group,'sketch'),x.recon_group+'모둠이 그린 개형')}</div></div>
+       <div class="thumbs" style="margin-top:8px">${thumb(lastUp(x.analyst_group,'worksheet'),x.analyst_group+'모둠 활동지 (풀이팀 1쪽)')}${thumb(lastUp(x.recon_group,'sketch'),x.recon_group+'모둠이 그린 개형')}</div></div>
       <div>${miniCands(r,x.sent_cards||[])}</div></div>`;}).join(''):'<p class="small muted">아직 이 유형의 단서를 보낸 모둠이 없어요.</p>'}</div>`;}).join('')}`;}
 function vPresent(){const g=T.pres,p=partnerOf(g),mine=row(g),dec=row(p);
   const sel=`<div class="pairsel">${[1,2,3,4,5,6,7,8].map(k=>{const a=row(k),b=row(partnerOf(k)),done=b&&b.recon_stage==='done'&&a&&a.stage==='sent';return `<button class="tab" data-pres="${k}" aria-selected="${g===k}">${k}모둠${done?' ✓':''}</button>`;}).join('')}</div>`;
@@ -66,7 +66,7 @@ function vPresent(){const g=T.pres,p=partnerOf(g),mine=row(g),dec=row(p);
   let left='<p class="small muted">아직 단서를 보내지 않았어요.</p>',right='<p class="small muted">짝 모둠의 단서를 아직 받지 않았어요.</p>',reveal='';
   const ra=mine&&caseById(mine.case_id);
   if(ra&&mine.stage==='sent'){const n=remaining(ra,mine.sent_cards||[]).length;
-    left=`<div class="box yel"><span class="small" style="font-weight:700">문제 ${ra.num} · ${esc(ra.who)} · ${TYPES[ra.kind]}</span><div class="big">${esc(ra.text)}</div></div><div class="sent">${cardList(ra,mine)}</div><div><span class="chip ${n===1?'ok':'no'}">이 단서만으로 남는 후보 ${n}개</span> <span class="chip">풀이 +${mine.an_score||0}점</span></div>${thumb(lastUp(g,'worksheet'),g+'모둠 활동지')}`;}
+    left=`<div class="box yel"><span class="small" style="font-weight:700">문제 ${ra.num} · ${esc(ra.who)} · ${TYPES[ra.kind]}</span><div class="big">${esc(ra.text)}</div></div><div class="sent">${cardList(ra,mine)}</div><div><span class="chip ${n===1?'ok':'no'}">이 단서만으로 남는 후보 ${n}개</span> <span class="chip">풀이 +${mine.an_score||0}점</span></div>${thumb(lastUp(g,'worksheet'),g+'모둠 활동지 (풀이팀 1쪽)')}`;}
   const rb=dec&&caseById(dec.case_id);
   if(rb&&dec.stage==='sent'){const done=dec.recon_stage==='done';
     right=`<div class="box yel"><span class="small" style="font-weight:700">문제 ${rb.num} · ${esc(rb.who)} · ${TYPES[rb.kind]}</span><div class="big">${esc(rb.text)}</div></div>

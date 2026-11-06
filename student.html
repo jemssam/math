@@ -110,8 +110,8 @@ function vWait(){return `<section class="panel wait"><div class="spin" aria-hidd
   <p class="muted" style="margin:0">${IGA(YOU)} 단서를 보내면 바로 해결 화면이 열려요. 기다리는 동안 활동지의 풀이 칸을 마무리하고, 아래에서 모둠 대표 활동지 사진을 한 장 올려 주세요.</p></section>`+photoBox();}
 let photo=null,myPhoto=null,photoBusy=false;
 function photoBox(){if(DEMO)return '';
-  return `<section class="panel"><p class="eyebrow">활동지 사진</p><h3 style="margin:0 0 6px">모둠 대표 활동지 1개 올리기</h3>
-  <p class="small muted" style="margin:0 0 10px">모둠에서 가장 잘 정리된 활동지 한 장만 올려요. 풀이 칸이 보이게 찍어 주세요. 다시 올리면 새 사진으로 바뀌어요.</p>
+  return `<section class="panel"><p class="eyebrow">활동지 사진</p><h3 style="margin:0 0 6px">활동지 1쪽 (풀이팀 ①~⑥) 올리기</h3>
+  <p class="small muted" style="margin:0 0 10px">모둠에서 가장 잘 정리된 활동지의 <b>1쪽 풀이팀 부분</b>을 한 장만 찍어 올려요. 해결팀이 그린 개형은 사이트에 자동으로 올라가니 따로 찍지 않아요. 다시 올리면 새 사진으로 바뀌어요.</p>
   <label class="btn" style="display:inline-flex;align-items:center">카메라로 찍기 · 사진 고르기<input type="file" id="file" accept="image/*" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0"></label>
   ${photo?`<div style="margin-top:10px"><img src="${photo}" alt="올릴 사진 미리보기" style="max-height:300px;border-radius:10px;border:1px solid var(--line)"></div><button class="btn navy" id="up" style="margin-top:10px">선생님 화면에 올리기</button>`:''}
   ${myPhoto?`<div class="sec"><span class="small muted">지금 올라가 있는 사진</span><br><img src="${esc(myPhoto.url)}" alt="올린 활동지" style="max-height:200px;border-radius:10px;border:1px solid var(--line)"></div>`:''}</section>`;}
